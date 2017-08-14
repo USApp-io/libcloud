@@ -16,10 +16,12 @@
 from __future__ import with_statement
 import sys
 
+from libcloud.utils.py3 import httplib
 from libcloud.compute.drivers.upcloud import UpcloudDriver
 from libcloud.common.types import InvalidCredsError
 
-from libcloud.test import LibcloudTestCase, unittest
+from libcloud.test import LibcloudTestCase, unittest, MockHttp
+from libcloud.test.file_fixtures import ComputeFileFixtures
 from libcloud.test.secrets import UPCLOUD_PARAMS
 
 
@@ -35,6 +37,7 @@ class UpcloudAuthenticationTests(LibcloudTestCase):
 class UpcloudDriverTests(LibcloudTestCase):
 
     def setUp(self):
+        UpcloudDriver.connectionCls.conn_class = UpcloudMockHttp
         self.driver = UpcloudDriver(*UPCLOUD_PARAMS)
 
     def test_list_locations(self):
@@ -53,6 +56,15 @@ class UpcloudDriverTests(LibcloudTestCase):
                found = True
                break
         self.assertTrue(found, "Location with id {} was not found".format(id))
+
+class UpcloudMockHttp(MockHttp):
+    fixtures = ComputeFileFixtures('upcloud')
+
+    def _1_2_zone(self, method, url, body, headers):
+        body = self.fixtures.load('api_1_2_zones.json')
+        return (httplib.OK, body, {}, httplib.responses[httplib.OK])
+
+
 
 if __name__ == '__main__':
     sys.exit(unittest.main())
