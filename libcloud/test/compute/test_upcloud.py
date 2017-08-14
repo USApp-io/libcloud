@@ -25,6 +25,19 @@ from libcloud.test.file_fixtures import ComputeFileFixtures
 from libcloud.test.secrets import UPCLOUD_PARAMS
 
 
+import libcloud
+class UpcloudPersistResponse(libcloud.compute.drivers.upcloud.UpcloudResponse):
+
+    def parse_body(self):
+        import os
+        path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.path.pardir, 'compute', 'fixtures', 'upcloud'))
+        filename = 'api' + self.request.path_url.replace('/', '_').replace('.', '_') + '.json'
+        filename = os.path.join(path, filename)
+        if not os.path.exists(filename):
+            with open(filename, 'w+') as f:
+                f.write(self.body)
+        return super(UpcloudPersistResponse, self).parse_body()
+
 class UpcloudAuthenticationTests(LibcloudTestCase):
 
     def setUp(self):
@@ -38,6 +51,7 @@ class UpcloudDriverTests(LibcloudTestCase):
 
     def setUp(self):
         UpcloudDriver.connectionCls.conn_class = UpcloudMockHttp
+        UpcloudDriver.connectionCls.responseCls = UpcloudPersistResponse
         self.driver = UpcloudDriver(*UPCLOUD_PARAMS)
 
     def test_list_locations(self):
@@ -61,7 +75,7 @@ class UpcloudMockHttp(MockHttp):
     fixtures = ComputeFileFixtures('upcloud')
 
     def _1_2_zone(self, method, url, body, headers):
-        body = self.fixtures.load('api_1_2_zones.json')
+        body = self.fixtures.load('api_1_2_zone.json')
         return (httplib.OK, body, {}, httplib.responses[httplib.OK])
 
 
