@@ -13,12 +13,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import with_statement
 import sys
+
+from libcloud.compute.drivers.upcloud import UpcloudDriver
+from libcloud.common.types import InvalidCredsError
 
 from libcloud.test import LibcloudTestCase, unittest
 from libcloud.test.secrets import UPCLOUD_PARAMS
-from libcloud.compute.drivers.upcloud import UpcloudDriver
 
+
+class UpcloudAuthenticationTests(LibcloudTestCase):
+
+    def setUp(self):
+        self.driver = UpcloudDriver("nosuchuser", "nopwd")
+
+    def test_authentication_fails(self):
+        with self.assertRaises(InvalidCredsError):
+            self.driver.list_locations()
 
 class UpcloudDriverTests(LibcloudTestCase):
 
@@ -41,8 +53,6 @@ class UpcloudDriverTests(LibcloudTestCase):
                found = True
                break
         self.assertTrue(found, "Location with id {} was not found".format(id))
-
-
 
 if __name__ == '__main__':
     sys.exit(unittest.main())

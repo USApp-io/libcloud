@@ -17,13 +17,19 @@ Upcloud node driver
 """
 import base64
 
+from libcloud.utils.py3 import httplib
 from libcloud.compute.base import NodeDriver, NodeLocation
 from libcloud.compute.types import Provider
 from libcloud.common.base import ConnectionUserAndKey, JsonResponse
+from libcloud.common.types import InvalidCredsError
 
 class UpcloudResponse(JsonResponse):
     """Response class for UpcloudDriver"""
-    pass
+
+    def parse_error(self):
+        data = self.parse_body()
+        if self.status == httplib.UNAUTHORIZED:
+            raise InvalidCredsError(value=data['error']['error_message'])
 
 class UpcloudConnection(ConnectionUserAndKey):
     """Connection class for UpcloudDriver"""
@@ -63,7 +69,6 @@ class UpcloudDriver(NodeDriver):
 
     def list_locations(self):
         """List of locations where nodes can be"""
-        # TODO: error handling
         response = self.connection.request('1.2/zone')
         return self._to_node_locations(response.object['zones']['zone'])
 
@@ -77,6 +82,8 @@ class UpcloudDriver(NodeDriver):
             driver=str(self))
 
     def _parse_country(self, zone_id):
+        """Parses the country information out of zone_id.
+        Zone_id format [country]_[city][number], like fi_hel1"""
         return zone_id.split('-')[0].upper()
 
 
