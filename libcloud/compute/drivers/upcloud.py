@@ -23,6 +23,7 @@ from libcloud.compute.types import Provider
 from libcloud.common.base import ConnectionUserAndKey, JsonResponse
 from libcloud.common.types import InvalidCredsError
 
+
 class UpcloudResponse(JsonResponse):
     """Response class for UpcloudDriver"""
 
@@ -30,6 +31,7 @@ class UpcloudResponse(JsonResponse):
         data = self.parse_body()
         if self.status == httplib.UNAUTHORIZED:
             raise InvalidCredsError(value=data['error']['error_message'])
+
 
 class UpcloudConnection(ConnectionUserAndKey):
     """Connection class for UpcloudDriver"""
@@ -44,9 +46,9 @@ class UpcloudConnection(ConnectionUserAndKey):
 
     def _basic_auth(self):
         """Constructs basic auth header content string"""
-        username_password = bytes("{}:{}".format(self.user_id, self.key), 'utf-8')
-        encoded_username_password = base64.b64encode(username_password)
-        return 'Basic {}'.format(encoded_username_password.decode('ascii'))
+        credentials = bytes("{}:{}".format(self.user_id, self.key), 'utf-8')
+        credentials = base64.b64encode(credentials)
+        return 'Basic {}'.format(credentials.decode('ascii'))
 
 
 class UpcloudDriver(NodeDriver):
@@ -65,7 +67,7 @@ class UpcloudDriver(NodeDriver):
 
     def __init__(self, username, password, **kwargs):
         super(UpcloudDriver, self).__init__(key=username, secret=password,
-                **kwargs)
+                                            **kwargs)
 
     def list_locations(self):
         """List of locations where nodes can be"""
@@ -77,14 +79,11 @@ class UpcloudDriver(NodeDriver):
 
     def _construct_node_location(self, zone):
         return NodeLocation(id=zone['id'],
-            name=zone['description'],
-            country=self._parse_country(zone['id']),
-            driver=str(self))
+                            name=zone['description'],
+                            country=self._parse_country(zone['id']),
+                            driver=str(self))
 
     def _parse_country(self, zone_id):
         """Parses the country information out of zone_id.
         Zone_id format [country]_[city][number], like fi_hel1"""
         return zone_id.split('-')[0].upper()
-
-
-
