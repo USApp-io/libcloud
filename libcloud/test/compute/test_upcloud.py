@@ -52,7 +52,7 @@ class UpcloudAuthenticationTests(LibcloudTestCase):
 class UpcloudDriverTests(LibcloudTestCase):
 
     def setUp(self):
-        #UpcloudDriver.connectionCls.conn_class = UpcloudMockHttp
+        UpcloudDriver.connectionCls.conn_class = UpcloudMockHttp
         #UpcloudDriver.connectionCls.responseCls = UpcloudPersistResponse
         self.driver = UpcloudDriver(*UPCLOUD_PARAMS)
 
@@ -113,6 +113,11 @@ class UpcloudMockHttp(MockHttp):
     def _1_2_zone(self, method, url, body, headers):
         body = self.fixtures.load('api_1_2_zone.json')
         return (httplib.OK, body, {}, httplib.responses[httplib.OK])
+
+    def _1_2_plan(self, method, url, body, headers):
+        body = self.fixtures.load('api_1_2_plan.json')
+        return (httplib.OK, body, {}, httplib.responses[httplib.OK])
+
 
 if __name__ == '__main__':
     sys.exit(unittest.main())
