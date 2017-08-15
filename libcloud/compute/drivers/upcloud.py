@@ -18,7 +18,7 @@ Upcloud node driver
 import base64
 
 from libcloud.utils.py3 import httplib
-from libcloud.compute.base import NodeDriver, NodeLocation
+from libcloud.compute.base import NodeDriver, NodeLocation, NodeSize
 from libcloud.compute.types import Provider
 from libcloud.common.base import ConnectionUserAndKey, JsonResponse
 from libcloud.common.types import InvalidCredsError
@@ -74,6 +74,13 @@ class UpcloudDriver(NodeDriver):
         response = self.connection.request('1.2/zone')
         return self._to_node_locations(response.object['zones']['zone'])
 
+    def list_sizes(self):
+        """List node sizes
+        ``NodeSize`` has extra fields ``core_number``and ``storage_tier``
+        """
+        response = self.connection.request('1.2/plan')
+        return self._to_node_sizes(response.object['plans']['plan'])
+
     def _to_node_locations(self, zones):
         return [self._construct_node_location(zone) for zone in zones]
 
@@ -87,3 +94,15 @@ class UpcloudDriver(NodeDriver):
         """Parses the country information out of zone_id.
         Zone_id format [country]_[city][number], like fi_hel1"""
         return zone_id.split('-')[0].upper()
+
+    def _to_node_sizes(self, plans):
+        return [self._construct_node_size(plan) for plan in plans]
+
+    def _construct_node_size(self, plan):
+        return NodeSize(id=plan['name'], name=plan['name'],
+                        ram=plan['memory_amount'],
+                        disk=plan['storage_size'],
+                        bandwidth=plan['public_traffic_out'],
+                        price=None, driver=str(self),
+                        extra={'core_number': plan['core_number'],
+                               'storage_tier': plan['storage_tier']})
