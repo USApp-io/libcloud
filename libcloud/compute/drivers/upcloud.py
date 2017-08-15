@@ -19,6 +19,7 @@ import base64
 
 from libcloud.utils.py3 import httplib
 from libcloud.compute.base import NodeDriver, NodeLocation, NodeSize
+from libcloud.compute.base import NodeImage
 from libcloud.compute.types import Provider
 from libcloud.common.base import ConnectionUserAndKey, JsonResponse
 from libcloud.common.types import InvalidCredsError
@@ -81,6 +82,15 @@ class UpcloudDriver(NodeDriver):
         response = self.connection.request('1.2/plan')
         return self._to_node_sizes(response.object['plans']['plan'])
 
+    def list_images(self):
+        """Lists images from upcloud from two different places
+        and joins them to one"""
+        response = self.connection.request('1.2/storage/template')
+        obj = response.object
+        response = self.connection.request('1.2/storage/cdrom')
+        obj['storages']['storage'].extend(response.object['storages']['storage'])
+        return self._to_node_images(obj['storages']['storage'])
+
     def _to_node_locations(self, zones):
         return [self._construct_node_location(zone) for zone in zones]
 
@@ -99,10 +109,27 @@ class UpcloudDriver(NodeDriver):
         return [self._construct_node_size(plan) for plan in plans]
 
     def _construct_node_size(self, plan):
+        extra = self._copy_dict(('core_number', 'storage_tier'), plan)
         return NodeSize(id=plan['name'], name=plan['name'],
                         ram=plan['memory_amount'],
                         disk=plan['storage_size'],
                         bandwidth=plan['public_traffic_out'],
                         price=None, driver=str(self),
-                        extra={'core_number': plan['core_number'],
-                               'storage_tier': plan['storage_tier']})
+                        extra=extra)
+
+    def _to_node_images(self, images):
+        return [self._construct_node_image(image) for image in images]
+
+    def _construct_node_image(self, image):
+        extra = self._copy_dict(('access', 'license',
+                                 'size', 'state', 'type'), image)
+        return NodeImage(id=image['uuid'],
+                         name=image['title'],
+                         driver=str(self),
+                         extra=extra)
+
+    def _copy_dict(self, keys, d):
+        extra = {}
+        for key in keys:
+            extra[key] = d[key]
+        return extra
