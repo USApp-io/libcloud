@@ -56,7 +56,7 @@ class UpcloudDriverTests(LibcloudTestCase):
 
     def setUp(self):
         UpcloudDriver.connectionCls.conn_class = UpcloudMockHttp
-        #UpcloudDriver.connectionCls.responseCls = UpcloudPersistResponse
+        # UpcloudDriver.connectionCls.responseCls = UpcloudPersistResponse
         self.driver = UpcloudDriver(*UPCLOUD_PARAMS)
 
     def test_list_locations(self):
@@ -96,9 +96,24 @@ class UpcloudDriverTests(LibcloudTestCase):
         self.assert_object(expected_node_image, objects=images)
 
     def test_create_node_from_template(self):
-        # TODO: extra must be added, the post is different depending of the image type
         image = NodeImage(id='01000000-0000-4000-8000-000030060200',
                           name='Ubuntu Server 16.04 LTS (Xenial Xerus)',
+                          driver=self.driver)
+        location = NodeLocation(id='fi-hel1', name='Helsinki #1', country='FI', driver=self.driver)
+        size = NodeSize(id='1xCPU-1GB', name='1xCPU-1GB', ram=1024, disk=30, bandwidth=2048,
+                        extra={'core_number': 1, 'storage_tier': 'maxiops'}, price=None, driver=self.driver)
+        node = self.driver.create_node(name='test_server', size=size, image=image, location=location)
+
+        self.assertTrue(re.match('^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$', node.id))
+        self.assertEquals(node.name, 'test_server')
+        self.assertEquals(node.state, NodeState.STARTING)
+        self.assertTrue(len(node.public_ips) > 0)
+        self.assertTrue(len(node.private_ips) > 0)
+        self.assertEquals(node.driver, self.driver)
+
+    def test_create_node_from_cdrom(self):
+        image = NodeImage(id='01000000-0000-4000-8000-000030040101',
+                          name='Ubuntu Server 16.04 LTS (Xenial Xerus), 64-bit',
                           driver=self.driver)
         location = NodeLocation(id='fi-hel1', name='Helsinki #1', country='FI', driver=self.driver)
         size = NodeSize(id='1xCPU-1GB', name='1xCPU-1GB', ram=1024, disk=30, bandwidth=2048,

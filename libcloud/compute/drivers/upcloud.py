@@ -16,7 +16,6 @@
 Upcloud node driver
 """
 import base64
-import json
 
 from libcloud.utils.py3 import httplib
 from libcloud.compute.base import NodeDriver, NodeLocation, NodeSize
@@ -24,6 +23,7 @@ from libcloud.compute.base import NodeImage, Node, NodeState
 from libcloud.compute.types import Provider
 from libcloud.common.base import ConnectionUserAndKey, JsonResponse
 from libcloud.common.types import InvalidCredsError
+from libcloud.common.upcloud import UpcloudCreateNodeRequestBody
 
 
 class UpcloudResponse(JsonResponse):
@@ -99,30 +99,11 @@ class UpcloudDriver(NodeDriver):
         """Creates node to upcloud"""
         # TODO: create from cdrom
         # TODO: with host name
-        image = kwargs['image']
-        size = kwargs['size']
-        location = kwargs['location']
-        body = {
-            'server': {
-                'title': kwargs['name'],
-                'hostname': 'localhost',
-                'plan': size.id,
-                'zone': location.id,
-                'login_user': {'username': self.connection.user_id,
-                               'create_password': 'yes'},
-                'storage_devices': {
-                    'storage_device': [{
-                        'action': 'clone',
-                        'title': image.name,
-                        'storage': image.id
-                    }]
-                },
-            }
-        }
-        body = json.dumps(body)
+        body = UpcloudCreateNodeRequestBody(user_id=self.connection.user_id,
+                                            **kwargs)
         response = self.connection.request('1.2/server',
                                            method='POST',
-                                           data=body)
+                                           data=body.to_json())
         return self._to_node(response.object['server'])
 
     def _to_node(self, server):
