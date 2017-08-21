@@ -15,11 +15,13 @@
 
 from __future__ import with_statement
 import sys
+import re
 
 from libcloud.utils.py3 import httplib
 from libcloud.compute.drivers.upcloud import UpcloudDriver
 from libcloud.common.types import InvalidCredsError
 from libcloud.compute.drivers.upcloud import UpcloudResponse
+from libcloud.compute.types import NodeState
 from libcloud.compute.base import NodeImage, NodeSize, NodeLocation
 
 from libcloud.test import LibcloudTestCase, unittest, MockHttp
@@ -93,6 +95,23 @@ class UpcloudDriverTests(LibcloudTestCase):
                                                'type': 'cdrom'})
         self.assert_object(expected_node_image, objects=images)
 
+    def test_create_node_from_template(self):
+        # TODO: extra must be added, the post is different depending of the image type
+        image = NodeImage(id='01000000-0000-4000-8000-000030060200',
+                          name='Ubuntu Server 16.04 LTS (Xenial Xerus)',
+                          driver=self.driver)
+        location = NodeLocation(id='fi-hel1', name='Helsinki #1', country='FI', driver=self.driver)
+        size = NodeSize(id='1xCPU-1GB', name='1xCPU-1GB', ram=1024, disk=30, bandwidth=2048,
+                        extra={'core_number': 1, 'storage_tier': 'maxiops'}, price=None, driver=self.driver)
+        node = self.driver.create_node(name='test_server', size=size, image=image, location=location)
+
+        self.assertTrue(re.match('^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$', node.id))
+        self.assertEquals(node.name, 'test_server')
+        self.assertEquals(node.state, NodeState.STARTING)
+        self.assertTrue(len(node.public_ips) > 0)
+        self.assertTrue(len(node.private_ips) > 0)
+        self.assertEquals(node.driver, self.driver)
+
     def assert_object(self, expected_object, objects):
         same_data = any([self.objects_equals(expected_object, obj) for obj in objects])
         self.assertTrue(same_data, "Objects does not match")
@@ -134,6 +153,10 @@ class UpcloudMockHttp(MockHttp):
 
     def _1_2_storage_template(self, method, url, body, headers):
         body = self.fixtures.load('api_1_2_storage_template.json')
+        return (httplib.OK, body, {}, httplib.responses[httplib.OK])
+
+    def _1_2_server(self, method, url, body, headers):
+        body = self.fixtures.load('api_1_2_server.json')
         return (httplib.OK, body, {}, httplib.responses[httplib.OK])
 
 if __name__ == '__main__':
