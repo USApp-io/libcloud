@@ -16,6 +16,7 @@
 from __future__ import with_statement
 import sys
 import re
+import json
 
 from libcloud.utils.py3 import httplib
 from libcloud.compute.drivers.upcloud import UpcloudDriver
@@ -98,6 +99,7 @@ class UpcloudDriverTests(LibcloudTestCase):
     def test_create_node_from_template(self):
         image = NodeImage(id='01000000-0000-4000-8000-000030060200',
                           name='Ubuntu Server 16.04 LTS (Xenial Xerus)',
+                          extra={'type': 'template'},
                           driver=self.driver)
         location = NodeLocation(id='fi-hel1', name='Helsinki #1', country='FI', driver=self.driver)
         size = NodeSize(id='1xCPU-1GB', name='1xCPU-1GB', ram=1024, disk=30, bandwidth=2048,
@@ -114,6 +116,7 @@ class UpcloudDriverTests(LibcloudTestCase):
     def test_create_node_from_cdrom(self):
         image = NodeImage(id='01000000-0000-4000-8000-000030040101',
                           name='Ubuntu Server 16.04 LTS (Xenial Xerus), 64-bit',
+                          extra={'type': 'cdrom'},
                           driver=self.driver)
         location = NodeLocation(id='fi-hel1', name='Helsinki #1', country='FI', driver=self.driver)
         size = NodeSize(id='1xCPU-1GB', name='1xCPU-1GB', ram=1024, disk=30, bandwidth=2048,
@@ -171,7 +174,12 @@ class UpcloudMockHttp(MockHttp):
         return (httplib.OK, body, {}, httplib.responses[httplib.OK])
 
     def _1_2_server(self, method, url, body, headers):
-        body = self.fixtures.load('api_1_2_server.json')
+        dbody = json.loads(body)
+        storages = dbody['server']['storage_devices']['storage_device']
+        if any(['type' in storage and storage['type'] == 'cdrom' for storage in storages]):
+            body = self.fixtures.load('api_1_2_server_from_cdrom.json')
+        else:
+            body = self.fixtures.load('api_1_2_server_from_template.json')
         return (httplib.OK, body, {}, httplib.responses[httplib.OK])
 
 if __name__ == '__main__':

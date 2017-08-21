@@ -33,16 +33,46 @@ class UpcloudCreateNodeRequestBody(object):
                 'zone': location.id,
                 'login_user': {'username': user_id,
                                'create_password': 'yes'},
-                'storage_devices': {
-                    'storage_device': [{
-                        'action': 'clone',
-                        'title': image.name,
-                        'storage': image.id
-                    }]
-                },
+                'storage_devices': self._storage_device(image, size)
             }
         }
 
     def to_json(self):
         """Serializes the body to json"""
         return json.dumps(self.body)
+
+    def _storage_device(self, image, size):
+        extra = image.extra
+        if extra['type'] == 'template':
+            return self._storage_device_for_template_image(image)
+        elif extra['type'] == 'cdrom':
+            return self._storage_device_for_cdrom_image(image, size)
+
+    def _storage_device_for_template_image(self, image):
+        storage_devices = {
+            'storage_device': [{
+                'action': 'clone',
+                'title': image.name,
+                'storage': image.id
+            }]
+        }
+        return storage_devices
+
+    def _storage_device_for_cdrom_image(self, image, size):
+        storage_devices = {
+            'storage_device': [
+                {
+                    'action': 'create',
+                    'title': image.name,
+                    'size': size.disk,
+                    'tier': size.extra['storage_tier']
+
+                },
+                {
+                    'action': 'attach',
+                    'storage': image.id,
+                    'type': 'cdrom'
+                }
+            ]
+        }
+        return storage_devices

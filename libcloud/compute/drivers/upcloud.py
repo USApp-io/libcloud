@@ -97,8 +97,6 @@ class UpcloudDriver(NodeDriver):
 
     def create_node(self, **kwargs):
         """Creates node to upcloud"""
-        # TODO: create from cdrom
-        # TODO: with host name
         body = UpcloudCreateNodeRequestBody(user_id=self.connection.user_id,
                                             **kwargs)
         response = self.connection.request('1.2/server',
