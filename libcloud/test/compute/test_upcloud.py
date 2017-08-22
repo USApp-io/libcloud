@@ -111,23 +111,8 @@ class UpcloudDriverTests(LibcloudTestCase):
         self.assertTrue(len(node.public_ips) > 0)
         self.assertTrue(len(node.private_ips) > 0)
         self.assertEquals(node.driver, self.driver)
-
-    def test_create_node_from_cdrom(self):
-        image = NodeImage(id='01000000-0000-4000-8000-000030040101',
-                          name='Ubuntu Server 16.04 LTS (Xenial Xerus), 64-bit',
-                          extra={'type': 'cdrom'},
-                          driver=self.driver)
-        location = NodeLocation(id='fi-hel1', name='Helsinki #1', country='FI', driver=self.driver)
-        size = NodeSize(id='1xCPU-1GB', name='1xCPU-1GB', ram=1024, disk=30, bandwidth=2048,
-                        extra={'core_number': 1, 'storage_tier': 'maxiops'}, price=None, driver=self.driver)
-        node = self.driver.create_node(name='test_server', size=size, image=image, location=location)
-
-        self.assertTrue(re.match('^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$', node.id))
-        self.assertEquals(node.name, 'test_server')
-        self.assertEquals(node.state, NodeState.STARTING)
-        self.assertTrue(len(node.public_ips) > 0)
-        self.assertTrue(len(node.private_ips) > 0)
-        self.assertEquals(node.driver, self.driver)
+        self.assertTrue(len(node.extra['password']) > 0)
+        self.assertTrue(len(node.extra['vnc_password']) > 0)
 
     def test_create_node_with_ssh_keys(self):
         image = NodeImage(id='01000000-0000-4000-8000-000030060200',

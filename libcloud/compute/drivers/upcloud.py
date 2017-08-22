@@ -116,7 +116,11 @@ class UpcloudDriver(NodeDriver):
                     state=NodeState.STARTING,
                     public_ips=public_ips,
                     private_ips=private_ips,
-                    driver=self)
+                    driver=self,
+                    extra={
+                        'password': server['password'],
+                        'vnc_password': server['vnc_password']
+                    })
 
     def _to_node_locations(self, zones):
         return [self._construct_node_location(zone) for zone in zones]
