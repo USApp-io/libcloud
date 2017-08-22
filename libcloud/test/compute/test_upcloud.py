@@ -23,8 +23,7 @@ from libcloud.compute.drivers.upcloud import UpcloudDriver
 from libcloud.common.types import InvalidCredsError
 from libcloud.compute.drivers.upcloud import UpcloudResponse
 from libcloud.compute.types import NodeState
-from libcloud.compute.base import NodeImage, NodeSize, NodeLocation
-
+from libcloud.compute.base import NodeImage, NodeSize, NodeLocation, NodeAuthSSHKey
 from libcloud.test import LibcloudTestCase, unittest, MockHttp
 from libcloud.test.file_fixtures import ComputeFileFixtures
 from libcloud.test.secrets import UPCLOUD_PARAMS
@@ -123,6 +122,30 @@ class UpcloudDriverTests(LibcloudTestCase):
                         extra={'core_number': 1, 'storage_tier': 'maxiops'}, price=None, driver=self.driver)
         node = self.driver.create_node(name='test_server', size=size, image=image, location=location)
 
+        self.assertTrue(re.match('^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$', node.id))
+        self.assertEquals(node.name, 'test_server')
+        self.assertEquals(node.state, NodeState.STARTING)
+        self.assertTrue(len(node.public_ips) > 0)
+        self.assertTrue(len(node.private_ips) > 0)
+        self.assertEquals(node.driver, self.driver)
+
+    def test_create_node_with_ssh_keys(self):
+        image = NodeImage(id='01000000-0000-4000-8000-000030060200',
+                          name='Ubuntu Server 16.04 LTS (Xenial Xerus)',
+                          extra={'type': 'template'},
+                          driver=self.driver)
+        location = NodeLocation(id='fi-hel1', name='Helsinki #1', country='FI', driver=self.driver)
+        size = NodeSize(id='1xCPU-1GB', name='1xCPU-1GB', ram=1024, disk=30, bandwidth=2048,
+                        extra={'core_number': 1, 'storage_tier': 'maxiops'}, price=None, driver=self.driver)
+
+        auth = NodeAuthSSHKey('ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDCUUFfYA+T+BzoM7IIR' +
+                              'VXNndDjYvIROMjfyRBhhHf6RZd1IkAwcWSGISePh2tIiqu8gJalYYHg2w' +
+                              'i3ofMJfi6VYeyBFWrIDhMK0v+ziBbBUtlJNnP6MBOR/13avkk+76TVrcG' +
+                              'xu49RaptYNzZ21XluvIlaqqdjAhoh0J+o7OZTKD7N1UTPL7CIX+ITaA+g' +
+                              '3FR5ITClk8KmIbp3vT6fUPD7pNUrGBZTpcPcHq8rodQ8igWIVdSkb9iky' +
+                              'ew4y6wvsubQ3Ykn26XeKxrk1vA6ZKMHt7ijCYmfL0LcDfctNymy/vc6hs' +
+                              'WxCRS5OqNQ6nxdXpv9A+TD0sJuf5jaoH7MSpU1 mika.lackman@gmail.com')
+        node = self.driver.create_node(name='test_server', size=size, image=image, location=location, auth=auth)
         self.assertTrue(re.match('^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$', node.id))
         self.assertEquals(node.name, 'test_server')
         self.assertEquals(node.state, NodeState.STARTING)

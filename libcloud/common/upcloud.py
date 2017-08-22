@@ -20,8 +20,7 @@ class UpcloudCreateNodeRequestBody(object):
 
     Takes the create_node arguments (**kwargs) and constructs the request body
     """
-
-    def __init__(self, user_id, **kwargs):
+    def __init__(self, user_id, auth=None, **kwargs):
         image = kwargs['image']
         size = kwargs['size']
         location = kwargs['location']
@@ -31,9 +30,8 @@ class UpcloudCreateNodeRequestBody(object):
                 'hostname': 'localhost',
                 'plan': size.id,
                 'zone': location.id,
-                'login_user': {'username': user_id,
-                               'create_password': 'yes'},
-                'storage_devices': self._storage_device(image, size)
+                'login_user': _LoginUser(user_id, auth).to_dict(),
+                'storage_devices': _StorageDevice(image, size).to_dict()
             }
         }
 
@@ -41,36 +39,61 @@ class UpcloudCreateNodeRequestBody(object):
         """Serializes the body to json"""
         return json.dumps(self.body)
 
-    def _storage_device(self, image, size):
-        extra = image.extra
-        if extra['type'] == 'template':
-            return self._storage_device_for_template_image(image)
-        elif extra['type'] == 'cdrom':
-            return self._storage_device_for_cdrom_image(image, size)
 
-    def _storage_device_for_template_image(self, image):
+class _LoginUser(object):
+
+    def __init__(self, user_id, auth=None):
+        self.user_id = user_id
+        self.auth = auth
+
+    def to_dict(self):
+        login_user = {'username': self.user_id}
+        if self.auth is not None:
+            login_user['ssh_keys'] = {
+                'ssh_key': [self.auth.pubkey]
+            }
+        else:
+            login_user['create_password'] = 'yes'
+
+        return login_user
+
+
+class _StorageDevice(object):
+
+    def __init__(self, image, size):
+        self.image = image
+        self.size = size
+
+    def to_dict(self):
+        extra = self.image.extra
+        if extra['type'] == 'template':
+            return self._storage_device_for_template_image()
+        elif extra['type'] == 'cdrom':
+            return self._storage_device_for_cdrom_image()
+
+    def _storage_device_for_template_image(self):
         storage_devices = {
             'storage_device': [{
                 'action': 'clone',
-                'title': image.name,
-                'storage': image.id
+                'title': self.image.name,
+                'storage': self.image.id
             }]
         }
         return storage_devices
 
-    def _storage_device_for_cdrom_image(self, image, size):
+    def _storage_device_for_cdrom_image(self):
         storage_devices = {
             'storage_device': [
                 {
                     'action': 'create',
-                    'title': image.name,
-                    'size': size.disk,
-                    'tier': size.extra['storage_tier']
+                    'title': self.image.name,
+                    'size': self.size.disk,
+                    'tier': self.size.extra['storage_tier']
 
                 },
                 {
                     'action': 'attach',
-                    'storage': image.id,
+                    'storage': self.image.id,
                     'type': 'cdrom'
                 }
             ]
