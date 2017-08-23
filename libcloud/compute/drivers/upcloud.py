@@ -16,6 +16,7 @@
 Upcloud node driver
 """
 import base64
+import json
 
 from libcloud.utils.py3 import httplib
 from libcloud.compute.base import NodeDriver, NodeLocation, NodeSize
@@ -121,6 +122,20 @@ class UpcloudDriver(NodeDriver):
             response = self.connection.request('1.2/server/{}'.format(node_id))
             servers.append(response.object['server'])
         return self._to_nodes(servers)
+
+    def reboot_node(self, node):
+        """Reboots the node
+        Returns True if successfull
+        """
+        body = {
+            'restart_server': {
+                'stop_type': 'hard'
+            }
+        }
+        self.connection.request('1.2/server/{}/restart'.format(node.id),
+                                method='POST',
+                                data=json.dumps(body))
+        return True
 
     def _node_ids(self):
         """Returns list of server uids currently on upcloud"""

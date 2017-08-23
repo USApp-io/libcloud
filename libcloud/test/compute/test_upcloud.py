@@ -141,13 +141,18 @@ class UpcloudDriverTests(LibcloudTestCase):
     def test_list_nodes(self):
         nodes = self.driver.list_nodes()
 
-        self.assertEquals(len(nodes), 1)
+        self.assertTrue(len(nodes) >= 1)
         node = nodes[0]
         self.assertEquals(node.name, 'test_server')
         self.assertEquals(node.state, NodeState.RUNNING)
         self.assertTrue(len(node.public_ips) > 0)
         self.assertTrue(len(node.private_ips) > 0)
         self.assertEquals(node.driver, self.driver)
+
+    def test_reboot_node(self):
+        nodes = self.driver.list_nodes()
+        success = self.driver.reboot_node(nodes[0])
+        self.assertTrue(success)
 
     def assert_object(self, expected_object, objects):
         same_data = any([self.objects_equals(expected_object, obj) for obj in objects])
@@ -206,6 +211,10 @@ class UpcloudMockHttp(MockHttp):
 
     def _1_2_server_00f8c525_7e62_4108_8115_3958df5b43dc(self, method, url, body, headers):
         body = self.fixtures.load('api_1_2_server_00f8c525-7e62-4108-8115-3958df5b43dc.json')
+        return (httplib.OK, body, {}, httplib.responses[httplib.OK])
+
+    def _1_2_server_00f8c525_7e62_4108_8115_3958df5b43dc_restart(self, method, url, body, headers):
+        body = self.fixtures.load('api_1_2_server_00f8c525-7e62-4108-8115-3958df5b43dc_restart.json')
         return (httplib.OK, body, {}, httplib.responses[httplib.OK])
 
 if __name__ == '__main__':
