@@ -25,6 +25,13 @@ from libcloud.common.base import ConnectionUserAndKey, JsonResponse
 from libcloud.common.types import InvalidCredsError
 from libcloud.common.upcloud import UpcloudCreateNodeRequestBody
 
+SERVER_STATE = {
+    'started': NodeState.RUNNING,
+    'stopped': NodeState.STOPPED,
+    'maintenance': NodeState.RECONFIGURING,
+    'error': NodeState.ERROR
+}
+
 
 class UpcloudResponse(JsonResponse):
     """Response class for UpcloudDriver"""
@@ -102,9 +109,29 @@ class UpcloudDriver(NodeDriver):
         response = self.connection.request('1.2/server',
                                            method='POST',
                                            data=body.to_json())
-        return self._to_node(response.object['server'])
+        server = response.object['server']
+        # Upcloud server's are in maintenace state when goind
+        # from state to other, it is safe to assume STARTING state
+        return self._to_node(server, state=NodeState.STARTING)
 
-    def _to_node(self, server):
+    def list_nodes(self):
+        """List nodes"""
+        servers = []
+        for node_id in self._node_ids():
+            response = self.connection.request('1.2/server/{}'.format(node_id))
+            servers.append(response.object['server'])
+        return self._to_nodes(servers)
+
+    def _node_ids(self):
+        """Returns list of server uids currently on upcloud"""
+        response = self.connection.request('1.2/server')
+        servers = response.object['servers']['server']
+        return [server['uuid'] for server in servers]
+
+    def _to_nodes(self, servers):
+        return [self._to_node(server) for server in servers]
+
+    def _to_node(self, server, state=None):
         ip_addresses = server['ip_addresses']['ip_address']
         public_ips = [ip['address'] for ip in ip_addresses
                       if ip['access'] == 'public']
@@ -116,7 +143,7 @@ class UpcloudDriver(NodeDriver):
             extra['password'] = server['password']
         return Node(id=server['uuid'],
                     name=server['title'],
-                    state=NodeState.STARTING,
+                    state=state or SERVER_STATE[server['state']],
                     public_ips=public_ips,
                     private_ips=private_ips,
                     driver=self,

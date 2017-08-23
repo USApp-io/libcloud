@@ -138,6 +138,17 @@ class UpcloudDriverTests(LibcloudTestCase):
         self.assertTrue(len(node.private_ips) > 0)
         self.assertEquals(node.driver, self.driver)
 
+    def test_list_nodes(self):
+        nodes = self.driver.list_nodes()
+
+        self.assertEquals(len(nodes), 1)
+        node = nodes[0]
+        self.assertEquals(node.name, 'test_server')
+        self.assertEquals(node.state, NodeState.RUNNING)
+        self.assertTrue(len(node.public_ips) > 0)
+        self.assertTrue(len(node.private_ips) > 0)
+        self.assertEquals(node.driver, self.driver)
+
     def assert_object(self, expected_object, objects):
         same_data = any([self.objects_equals(expected_object, obj) for obj in objects])
         self.assertTrue(same_data, "Objects does not match")
@@ -182,12 +193,19 @@ class UpcloudMockHttp(MockHttp):
         return (httplib.OK, body, {}, httplib.responses[httplib.OK])
 
     def _1_2_server(self, method, url, body, headers):
-        dbody = json.loads(body)
-        storages = dbody['server']['storage_devices']['storage_device']
-        if any(['type' in storage and storage['type'] == 'cdrom' for storage in storages]):
-            body = self.fixtures.load('api_1_2_server_from_cdrom.json')
+        if method == 'POST':
+            dbody = json.loads(body)
+            storages = dbody['server']['storage_devices']['storage_device']
+            if any(['type' in storage and storage['type'] == 'cdrom' for storage in storages]):
+                body = self.fixtures.load('api_1_2_server_from_cdrom.json')
+            else:
+                body = self.fixtures.load('api_1_2_server_from_template.json')
         else:
-            body = self.fixtures.load('api_1_2_server_from_template.json')
+            body = self.fixtures.load('api_1_2_server.json')
+        return (httplib.OK, body, {}, httplib.responses[httplib.OK])
+
+    def _1_2_server_00f8c525_7e62_4108_8115_3958df5b43dc(self, method, url, body, headers):
+        body = self.fixtures.load('api_1_2_server_00f8c525-7e62-4108-8115-3958df5b43dc.json')
         return (httplib.OK, body, {}, httplib.responses[httplib.OK])
 
 if __name__ == '__main__':
