@@ -121,7 +121,7 @@ class UpcloudDriver(NodeDriver):
         obj['storages']['storage'].extend(storage)
         return self._to_node_images(obj['storages']['storage'])
 
-    def create_node(self, name, size, image, location, auth=None):
+    def create_node(self, name, size, image, location, auth=None, **kwargs):
         """
         Creates instance to upcloud.
 
