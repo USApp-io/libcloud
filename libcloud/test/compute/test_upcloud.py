@@ -59,6 +59,11 @@ class UpcloudDriverTests(LibcloudTestCase):
         # UpcloudDriver.connectionCls.responseCls = UpcloudPersistResponse
         self.driver = UpcloudDriver(*UPCLOUD_PARAMS)
 
+    def test_features(self):
+        features = self.driver.features['create_node']
+        self.assertIn('ssh_key', features)
+        self.assertIn('generates_password', features)
+
     def test_list_locations(self):
         locations = self.driver.list_locations()
         self.assertTrue(len(locations) >= 1)

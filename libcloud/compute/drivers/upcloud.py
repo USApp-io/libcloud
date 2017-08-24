@@ -84,6 +84,7 @@ class UpcloudDriver(NodeDriver):
     name = 'Upcloud'
     website = 'https://www.upcloud.com'
     connectionCls = UpcloudConnection
+    features = {'create_node': ['ssh_key', 'generates_password']}
 
     def __init__(self, username, password, **kwargs):
         super(UpcloudDriver, self).__init__(key=username, secret=password,
