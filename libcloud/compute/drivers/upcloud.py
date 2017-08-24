@@ -91,20 +91,29 @@ class UpcloudDriver(NodeDriver):
                                             **kwargs)
 
     def list_locations(self):
-        """List of locations where nodes can be"""
+        """
+        List available locations for deployment
+
+        :rtype: ``list`` of :class:`NodeLocation`
+        """
         response = self.connection.request('1.2/zone')
         return self._to_node_locations(response.object['zones']['zone'])
 
     def list_sizes(self):
-        """List node sizes
-        ``NodeSize`` has extra fields ``core_number``and ``storage_tier``
+        """
+        List available plans
+
+        :rtype: ``list`` of :class:`NodeSize`
         """
         response = self.connection.request('1.2/plan')
         return self._to_node_sizes(response.object['plans']['plan'])
 
     def list_images(self):
-        """Lists images from upcloud from two different places
-        and joins them to one"""
+        """
+        List available distributions.
+
+        :rtype: ``list`` of :class:`NodeImage`
+        """
         response = self.connection.request('1.2/storage/template')
         obj = response.object
         response = self.connection.request('1.2/storage/cdrom')
@@ -112,10 +121,36 @@ class UpcloudDriver(NodeDriver):
         obj['storages']['storage'].extend(storage)
         return self._to_node_images(obj['storages']['storage'])
 
-    def create_node(self, **kwargs):
-        """Creates node to upcloud"""
+    def create_node(self, name, size, image, location, auth=None):
+        """
+        Creates instance to upcloud.
+
+        If auth is not given then password will be generated.
+
+        :param name:   String with a name for this new node (required)
+        :type name:   ``str``
+
+        :param size:   The size of resources allocated to this node.
+                            (required)
+        :type size:   :class:`.NodeSize`
+
+        :param image:  OS Image to boot on node. (required)
+        :type image:  :class:`.NodeImage`
+
+        :param location: Which data center to create a node in. If empty,
+                              undefined behavior will be selected. (optional)
+        :type location: :class:`.NodeLocation`
+
+        :param auth:   Initial authentication information for the node
+                            (optional)
+        :type auth:   :class:`.NodeAuthSSHKey`
+
+        :return: The newly created node.
+        :rtype: :class:`.Node`
+        """
         body = UpcloudCreateNodeRequestBody(user_id=self.connection.user_id,
-                                            **kwargs)
+                                            name=name, size=size, image=image,
+                                            location=location, auth=auth)
         response = self.connection.request('1.2/server',
                                            method='POST',
                                            data=body.to_json())
@@ -125,7 +160,12 @@ class UpcloudDriver(NodeDriver):
         return self._to_node(server, state=NodeState.STARTING)
 
     def list_nodes(self):
-        """List nodes"""
+        """
+        List nodes
+
+        :return: List of node objects
+        :rtype: ``list`` of :class:`Node`
+        """
         servers = []
         for node_id in self._node_ids():
             response = self.connection.request('1.2/server/{}'.format(node_id))
@@ -133,8 +173,13 @@ class UpcloudDriver(NodeDriver):
         return self._to_nodes(servers)
 
     def reboot_node(self, node):
-        """Reboots the node
-        Returns True if successfull
+        """
+        Reboot the given node
+
+        :param      node: the node to reboot
+        :type       node: :class:`Node`
+
+        :rtype: ``bool``
         """
         body = {
             'restart_server': {
@@ -147,6 +192,17 @@ class UpcloudDriver(NodeDriver):
         return True
 
     def destroy_node(self, node):
+        """
+        Destroy the given node
+
+        The disk resources, attached to node,  will not be removed.
+
+        :param       node: the node to destroy
+        :type        node: :class:`Node`
+
+        :rtype: ``bool``
+        """
+
         operations = UpcloudNodeOperations(self.connection)
         destroyer = UpcloudNodeDestroyer(operations)
         return destroyer.destroy_node(node.id)

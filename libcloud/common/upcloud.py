@@ -27,13 +27,10 @@ class UpcloudCreateNodeRequestBody(object):
 
     Takes the create_node arguments (**kwargs) and constructs the request body
     """
-    def __init__(self, user_id, auth=None, **kwargs):
-        image = kwargs['image']
-        size = kwargs['size']
-        location = kwargs['location']
+    def __init__(self, user_id, name, size, image, location, auth=None):
         self.body = {
             'server': {
-                'title': kwargs['name'],
+                'title': name,
                 'hostname': 'localhost',
                 'plan': size.id,
                 'zone': location.id,
