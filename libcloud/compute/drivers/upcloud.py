@@ -25,6 +25,8 @@ from libcloud.compute.types import Provider
 from libcloud.common.base import ConnectionUserAndKey, JsonResponse
 from libcloud.common.types import InvalidCredsError
 from libcloud.common.upcloud import UpcloudCreateNodeRequestBody
+from libcloud.common.upcloud import UpcloudNodeDestroyer
+from libcloud.common.upcloud import UpcloudNodeOperations
 
 SERVER_STATE = {
     'started': NodeState.RUNNING,
@@ -36,6 +38,12 @@ SERVER_STATE = {
 
 class UpcloudResponse(JsonResponse):
     """Response class for UpcloudDriver"""
+
+    def success(self):
+        if self.status == httplib.NO_CONTENT:
+            return True
+        else:
+            return super(UpcloudResponse, self).success()
 
     def parse_error(self):
         data = self.parse_body()
@@ -136,6 +144,11 @@ class UpcloudDriver(NodeDriver):
                                 method='POST',
                                 data=json.dumps(body))
         return True
+
+    def destroy_node(self, node):
+        operations = UpcloudNodeOperations(self.connection)
+        destroyer = UpcloudNodeDestroyer(operations)
+        return destroyer.destroy_node(node.id)
 
     def _node_ids(self):
         """Returns list of server uids currently on upcloud"""

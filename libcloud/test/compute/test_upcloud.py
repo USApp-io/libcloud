@@ -23,7 +23,7 @@ from libcloud.compute.drivers.upcloud import UpcloudDriver
 from libcloud.common.types import InvalidCredsError
 from libcloud.compute.drivers.upcloud import UpcloudResponse
 from libcloud.compute.types import NodeState
-from libcloud.compute.base import NodeImage, NodeSize, NodeLocation, NodeAuthSSHKey
+from libcloud.compute.base import NodeImage, NodeSize, NodeLocation, NodeAuthSSHKey, Node
 from libcloud.test import LibcloudTestCase, unittest, MockHttp
 from libcloud.test.file_fixtures import ComputeFileFixtures
 from libcloud.test.secrets import UPCLOUD_PARAMS
@@ -154,6 +154,15 @@ class UpcloudDriverTests(LibcloudTestCase):
         success = self.driver.reboot_node(nodes[0])
         self.assertTrue(success)
 
+    def test_destroy_node(self):
+        if UpcloudDriver.connectionCls.conn_class == UpcloudMockHttp:
+            nodes = [Node(id='00893c98_5d5a_4363_b177_88df518a2b60', name='', state='',
+                          public_ips=[], private_ips=[], driver=self.driver)]
+        else:
+            nodes = self.driver.list_nodes()
+        success = self.driver.destroy_node(nodes[0])
+        self.assertTrue(success)
+
     def assert_object(self, expected_object, objects):
         same_data = any([self.objects_equals(expected_object, obj) for obj in objects])
         self.assertTrue(same_data, "Objects does not match")
@@ -215,6 +224,10 @@ class UpcloudMockHttp(MockHttp):
 
     def _1_2_server_00f8c525_7e62_4108_8115_3958df5b43dc_restart(self, method, url, body, headers):
         body = self.fixtures.load('api_1_2_server_00f8c525-7e62-4108-8115-3958df5b43dc_restart.json')
+        return (httplib.OK, body, {}, httplib.responses[httplib.OK])
+
+    def _1_2_server_00893c98_5d5a_4363_b177_88df518a2b60(self, method, url, body, headers):
+        body = self.fixtures.load('api_1_2_server_00893c98-5d5a-4363-b177-88df518a2b60.json')
         return (httplib.OK, body, {}, httplib.responses[httplib.OK])
 
 if __name__ == '__main__':

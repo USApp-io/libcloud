@@ -13,6 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
+import time
+
+from libcloud.common.exceptions import BaseHTTPError
+
+
+class UpcloudTimeoutException(Exception):
+    pass
 
 
 class UpcloudCreateNodeRequestBody(object):
@@ -38,6 +45,84 @@ class UpcloudCreateNodeRequestBody(object):
     def to_json(self):
         """Serializes the body to json"""
         return json.dumps(self.body)
+
+
+class UpcloudNodeDestroyer(object):
+    """Destroyes the node.
+    Node must be first stopped and then it can be
+    destroyed"""
+
+    WAIT_AMOUNT = 2
+    SLEEP_COUNT_TO_TIMEOUT = 20
+
+    def __init__(self, upcloud_node_operations, sleep_func=None):
+        self._operations = upcloud_node_operations
+        self._sleep_func = sleep_func or time.sleep
+        self._sleep_count = 0
+
+    def destroy_node(self, node_id):
+        self._stop_called = False
+        self._sleep_count = 0
+        return self._do_destroy_node(node_id)
+
+    def _do_destroy_node(self, node_id):
+        state = self._operations.node_state(node_id)
+        if state == 'stopped':
+            self._operations.destroy_node(node_id)
+            return True
+        elif state == 'error':
+            return False
+        elif state == 'started':
+            if not self._stop_called:
+                self._operations.stop_node(node_id)
+                self._stop_called = True
+            else:
+                # Waiting for started state to change and
+                # not calling stop again
+                self._sleep()
+            return self._do_destroy_node(node_id)
+        elif state == 'maintenance':
+            # Lets wait maintenace state to go away and retry destroy
+            self._sleep()
+            return self._do_destroy_node(node_id)
+        elif state is None:  # Server not found any more
+            return True
+
+    def _sleep(self):
+        if self._sleep_count > self.SLEEP_COUNT_TO_TIMEOUT:
+            raise UpcloudTimeoutException("Timeout, could not destroy node")
+        self._sleep_count += 1
+        self._sleep_func(self.WAIT_AMOUNT)
+
+
+class UpcloudNodeOperations(object):
+
+    def __init__(self, connection):
+        self.connection = connection
+
+    def stop_node(self, node_id):
+        body = {
+            'stop_server': {
+                'stop_type': 'hard'
+            }
+        }
+        self.connection.request('1.2/server/{}/stop'.format(node_id),
+                                method='POST',
+                                data=json.dumps(body))
+
+    def node_state(self, node_id):
+        action = '1.2/server/{}'.format(node_id)
+        try:
+            response = self.connection.request(action)
+            return response.object['server']['state']
+        except BaseHTTPError as e:
+            if e.code == 404:
+                return None
+            raise
+
+    def destroy_node(self, node_id):
+        self.connection.request('1.2/server/{}'.format(node_id),
+                                method='DELETE')
 
 
 class _LoginUser(object):
