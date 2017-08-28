@@ -17,6 +17,7 @@ from __future__ import with_statement
 import sys
 import re
 import json
+import base64
 
 from libcloud.utils.py3 import httplib
 from libcloud.compute.drivers.upcloud import UpcloudDriver
@@ -45,6 +46,7 @@ class UpcloudPersistResponse(UpcloudResponse):
 class UpcloudAuthenticationTests(LibcloudTestCase):
 
     def setUp(self):
+        UpcloudDriver.connectionCls.conn_class = UpcloudMockHttp
         self.driver = UpcloudDriver("nosuchuser", "nopwd")
 
     def test_authentication_fails(self):
@@ -196,8 +198,15 @@ class UpcloudMockHttp(MockHttp):
     fixtures = ComputeFileFixtures('upcloud')
 
     def _1_2_zone(self, method, url, body, headers):
-        body = self.fixtures.load('api_1_2_zone.json')
-        return (httplib.OK, body, {}, httplib.responses[httplib.OK])
+        auth = headers['Authorization'].split(' ')[1]
+        username, password = base64.b64decode(auth).split(':')
+        if username == 'nosuchuser' and password == 'nopwd':
+            body = self.fixtures.load('api_1_2_zone_failed_auth.json')
+            status_code = httplib.UNAUTHORIZED
+        else:
+            body = self.fixtures.load('api_1_2_zone.json')
+            status_code = httplib.OK
+        return (status_code, body, {}, httplib.responses[httplib.OK])
 
     def _1_2_plan(self, method, url, body, headers):
         body = self.fixtures.load('api_1_2_plan.json')
