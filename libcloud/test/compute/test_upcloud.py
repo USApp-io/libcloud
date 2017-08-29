@@ -19,7 +19,7 @@ import re
 import json
 import base64
 
-from libcloud.utils.py3 import httplib
+from libcloud.utils.py3 import httplib, ensure_string
 from libcloud.compute.drivers.upcloud import UpcloudDriver
 from libcloud.common.types import InvalidCredsError
 from libcloud.compute.drivers.upcloud import UpcloudResponse
@@ -199,7 +199,7 @@ class UpcloudMockHttp(MockHttp):
 
     def _1_2_zone(self, method, url, body, headers):
         auth = headers['Authorization'].split(' ')[1]
-        username, password = base64.b64decode(auth).split(':')
+        username, password = ensure_string(base64.b64decode(auth)).split(':')
         if username == 'nosuchuser' and password == 'nopwd':
             body = self.fixtures.load('api_1_2_zone_failed_auth.json')
             status_code = httplib.UNAUTHORIZED
