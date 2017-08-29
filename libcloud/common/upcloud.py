@@ -103,12 +103,12 @@ class UpcloudNodeOperations(object):
                 'stop_type': 'hard'
             }
         }
-        self.connection.request('1.2/server/{}/stop'.format(node_id),
+        self.connection.request('1.2/server/{0}/stop'.format(node_id),
                                 method='POST',
                                 data=json.dumps(body))
 
     def node_state(self, node_id):
-        action = '1.2/server/{}'.format(node_id)
+        action = '1.2/server/{0}'.format(node_id)
         try:
             response = self.connection.request(action)
             return response.object['server']['state']
@@ -118,7 +118,7 @@ class UpcloudNodeOperations(object):
             raise
 
     def destroy_node(self, node_id):
-        self.connection.request('1.2/server/{}'.format(node_id),
+        self.connection.request('1.2/server/{0}'.format(node_id),
                                 method='DELETE')
 
 

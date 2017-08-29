@@ -18,7 +18,7 @@ Upcloud node driver
 import base64
 import json
 
-from libcloud.utils.py3 import httplib
+from libcloud.utils.py3 import httplib, b
 from libcloud.compute.base import NodeDriver, NodeLocation, NodeSize
 from libcloud.compute.base import NodeImage, Node, NodeState
 from libcloud.compute.types import Provider
@@ -66,9 +66,9 @@ class UpcloudConnection(ConnectionUserAndKey):
 
     def _basic_auth(self):
         """Constructs basic auth header content string"""
-        credentials = bytes("{}:{}".format(self.user_id, self.key), 'utf-8')
+        credentials = b("{0}:{1}".format(self.user_id, self.key))
         credentials = base64.b64encode(credentials)
-        return 'Basic {}'.format(credentials.decode('ascii'))
+        return 'Basic {0}'.format(credentials.decode('ascii'))
 
 
 class UpcloudDriver(NodeDriver):
@@ -167,8 +167,8 @@ class UpcloudDriver(NodeDriver):
         :rtype: ``list`` of :class:`Node`
         """
         servers = []
-        for node_id in self._node_ids():
-            response = self.connection.request('1.2/server/{}'.format(node_id))
+        for nid in self._node_ids():
+            response = self.connection.request('1.2/server/{0}'.format(nid))
             servers.append(response.object['server'])
         return self._to_nodes(servers)
 
@@ -186,7 +186,7 @@ class UpcloudDriver(NodeDriver):
                 'stop_type': 'hard'
             }
         }
-        self.connection.request('1.2/server/{}/restart'.format(node.id),
+        self.connection.request('1.2/server/{0}/restart'.format(node.id),
                                 method='POST',
                                 data=json.dumps(body))
         return True
