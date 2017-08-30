@@ -72,7 +72,7 @@ class UpcloudDriverTests(LibcloudTestCase):
         expected_node_location = NodeLocation(id='fi-hel1',
                                               name='Helsinki #1',
                                               country='FI',
-                                              driver=str(self.driver))
+                                              driver=self.driver)
         self.assert_object(expected_node_location, objects=locations)
 
     def test_list_sizes(self):
@@ -84,7 +84,7 @@ class UpcloudDriverTests(LibcloudTestCase):
                                       disk=30,
                                       bandwidth=2048,
                                       price=None,
-                                      driver=str(self.driver),
+                                      driver=self.driver,
                                       extra={'core_number': 1,
                                              'storage_tier': 'maxiops'})
         self.assert_object(expected_node_size, objects=sizes)
@@ -94,7 +94,7 @@ class UpcloudDriverTests(LibcloudTestCase):
         self.assertTrue(len(images) >= 1)
         expected_node_image = NodeImage(id='01000000-0000-4000-8000-000010010101',
                                         name='Windows Server 2003 R2 Standard (CD 1)',
-                                        driver=str(self.driver),
+                                        driver=self.driver,
                                         extra={'access': 'public',
                                                'licence': 0,
                                                'size': 1,

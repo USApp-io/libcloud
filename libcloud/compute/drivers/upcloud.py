@@ -241,7 +241,7 @@ class UpcloudDriver(NodeDriver):
         return NodeLocation(id=zone['id'],
                             name=zone['description'],
                             country=self._parse_country(zone['id']),
-                            driver=str(self))
+                            driver=self)
 
     def _parse_country(self, zone_id):
         """Parses the country information out of zone_id.
@@ -257,7 +257,7 @@ class UpcloudDriver(NodeDriver):
                         ram=plan['memory_amount'],
                         disk=plan['storage_size'],
                         bandwidth=plan['public_traffic_out'],
-                        price=None, driver=str(self),
+                        price=None, driver=self,
                         extra=extra)
 
     def _to_node_images(self, images):
@@ -268,7 +268,7 @@ class UpcloudDriver(NodeDriver):
                                  'size', 'state', 'type'), image)
         return NodeImage(id=image['uuid'],
                          name=image['title'],
-                         driver=str(self),
+                         driver=self,
                          extra=extra)
 
     def _copy_dict(self, keys, d):
