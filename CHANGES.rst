@@ -1,8 +1,8 @@
 ﻿Changelog
 =========
 
-Changes in current version of Apache Libcloud
----------------------------------------------
+Changes in Apache Libcloud 2.2.0
+--------------------------------
 
 Common
 ~~~~~~
@@ -13,6 +13,10 @@ Common
 
 Compute
 ~~~~~~~
+
+- [ARM] Add option to create static public IP
+  [GITHUB-1091, LIBCLOUD-918]
+  (Aki Ketolainen)
 
 - [SOFTLAYER] Add `get_image` method to class
   [GITHUB-1066]
@@ -32,9 +36,21 @@ Container
 DNS
 ~~~
 
+- [ROUTE53] Fix for TXT and SPF records, when user didn't escapsulate data in quotes, 
+  the API would fire error. As reported by @glyph
+  [LIBCLOUD-875, GITHUB-1093]
+  (Anthony Shaw)
+
 - [LINODE] Add priority to the extra dictionary in record instances
   [GITHUB-1088]
   (@mete0r)
+
+Load Balancer
+~~~~~~~~~~~~~
+
+- Fixed AWS ALB/ELB driver init method to instantiate nested connection object properly
+  [LIBCLOUD-936, GITHUB-1089]
+  (Anton Kozyrev) 
 
 Storage
 ~~~~~~~
@@ -81,7 +97,7 @@ Compute
   (Anthony Shaw)
 
 - [GCE] Add loadBalancingScheme parameter for
- ex_create_forwarding_rule method in GCE driver.
+  ex_create_forwarding_rule method in GCE driver.
   [GITHUB-1079]
   (@sT331h0rs3)
 
