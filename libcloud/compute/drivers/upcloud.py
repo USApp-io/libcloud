@@ -42,8 +42,7 @@ class UpcloudResponse(JsonResponse):
     def success(self):
         if self.status == httplib.NO_CONTENT:
             return True
-        else:
-            return super(UpcloudResponse, self).success()
+        return super(UpcloudResponse, self).success()
 
     def parse_error(self):
         data = self.parse_body()
