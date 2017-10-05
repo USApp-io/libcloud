@@ -127,7 +127,8 @@ class UpcloudDriver(NodeDriver):
         obj['storages']['storage'].extend(storage)
         return self._to_node_images(obj['storages']['storage'])
 
-    def create_node(self, name, size, image, location, auth=None, **kwargs):
+    def create_node(self, name, size, image, location, auth=None, ex_username=None,
+                    **kwargs):
         """
         Creates instance to upcloud.
 
@@ -151,10 +152,15 @@ class UpcloudDriver(NodeDriver):
                             (optional)
         :type auth:   :class:`.NodeAuthSSHKey`
 
+        :param ex_username: Username for the host user. Default user is 'root'.
+                            Non-root user is given sudo rights. (optional)
+
+        :type ex_username: ``str``
+
         :return: The newly created node.
         :rtype: :class:`.Node`
         """
-        body = UpcloudCreateNodeRequestBody(user_id=self.connection.user_id,
+        body = UpcloudCreateNodeRequestBody(user_id=ex_username or 'root',
                                             name=name, size=size, image=image,
                                             location=location, auth=auth)
         response = self.connection.request('1.2/server',
