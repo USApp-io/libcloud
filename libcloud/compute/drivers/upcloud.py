@@ -154,7 +154,7 @@ class UpcloudDriver(NodeDriver):
         :return: The newly created node.
         :rtype: :class:`.Node`
         """
-        body = UpcloudCreateNodeRequestBody(user_id=self.connection.user_id,
+        body = UpcloudCreateNodeRequestBody(user_id='root',
                                             name=name, size=size, image=image,
                                             location=location, auth=auth)
         response = self.connection.request('1.2/server',
